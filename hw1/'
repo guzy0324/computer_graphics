@@ -1,0 +1,196 @@
+#include <math.h>
+#include "myglwidget.h"
+
+MyGLWidget::MyGLWidget(QWidget *parent)
+	:QOpenGLWidget(parent),
+	scene_id(1)
+{
+}
+
+MyGLWidget::~MyGLWidget()
+{
+
+}
+
+void MyGLWidget::initializeGL()
+{
+	glViewport(0, 0, width(), height());
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glDisable(GL_DEPTH_TEST);
+}
+
+void MyGLWidget::paintGL()
+{
+	if (scene_id==0) {
+		scene_0();
+	}
+	else {
+		scene_1();
+	}
+}
+
+void MyGLWidget::resizeGL(int width, int height)
+{
+	glViewport(0, 0, width, height);
+	update();
+}
+
+void MyGLWidget::keyPressEvent(QKeyEvent *e) {
+	//Press 0 or 1 to switch the scene
+	if (e->key() == Qt::Key_0) {
+		scene_id = 0;
+		update();
+	}
+	else if (e->key() == Qt::Key_1) {
+		scene_id = 1;
+		update();
+	}
+}
+
+void MyGLWidget::scene_0()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0f, 100.0f, 0.0f, 100.0f, -1000.0f, 1000.0f);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslatef(50.0f, 50.0f, 0.0f);
+	
+	//draw a diagonal "I"
+	glPushMatrix();
+	glColor3f(0.839f, 0.153f, 0.157f);
+	glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
+	glTranslatef(-2.5f, -22.5f, 0.0f);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(0.0f, 0.0f);
+	glVertex2f(5.0f, 0.0f);
+	glVertex2f(0.0f, 45.0f);
+
+	glVertex2f(5.0f, 0.0f);
+	glVertex2f(0.0f, 45.0f);
+	glVertex2f(5.0f, 45.0f);
+
+	glEnd();
+	glPopMatrix();	
+}
+
+void MyGLWidget::scene_1()
+{
+	float start_theta, end_theta, delta_theta, theta;
+	float r1, r2, a, b;
+	float x1, y1, x2, y2, x3, y3, x4, y4;
+	float w, h;
+	glClear(GL_COLOR_BUFFER_BIT);//指定及应用背景颜色
+	glMatrixMode(GL_PROJECTION);
+	//now we are in projection matrix stack!
+	//do projection transformation here...
+	glLoadIdentity();//重置当前指定的矩阵为单位矩阵
+	glOrtho(0.0f, width(), 0.0f, height(), -1000.0f, 1000.0f);//垂直投影
+
+	glMatrixMode(GL_MODELVIEW);
+	//now we are in modelview matrix stack!
+	//do modelview transformation here...
+	glLoadIdentity();//重置当前指定的矩阵为单位矩阵
+	glTranslatef(0.5 * width(), 0.5 * height(), 0.0f);//平移
+
+    //your implementation here, maybe you should write several glBegin
+	glPushMatrix();
+	//your implementation
+	glColor3f(0.839f, 0.153f, 0.157f);//指定物体颜色
+	glRotatef(10.0f, 0.0f, 0.0f, 1.0f);//旋转
+	glTranslatef(-180.0f, -22.5f, 0.0f);//平移
+	glBegin(GL_TRIANGLES);
+	start_theta = M_PI / 4;
+	end_theta = 2 * M_PI;
+	r1 = 50.0f, r2 = 70.0f;
+	a = 1.0f, b = 1.3f;
+	x1 = a * r1 * cos(start_theta), y1 = b * r1 * sin(start_theta);
+	x2 = a * r2 * cos(start_theta), y2 = b * r2 * sin(start_theta);
+	delta_theta = 1e-6;
+	for (theta = start_theta + delta_theta; theta < end_theta; theta += delta_theta)
+	{
+		x3 = a * r1 * cos(theta), y3 = b * r1 * sin(theta);
+		x4 = a * r2 * cos(theta), y4 = b * r2 * sin(theta);
+		glVertex2f(x1, y1);
+		glVertex2f(x2, y2);
+		glVertex2f(x3, y3);
+		glVertex2f(x2, y2);
+		glVertex2f(x3, y3);
+		glVertex2f(x4, y4);
+		x1 = x3, y1 = y3, x2 = x4, y2 = y4;
+	}
+	w = 60.0f, h = 10.0f;
+	glVertex2f(x2, -h);
+	glVertex2f(x2, h);
+	glVertex2f(x2 - w, -h);
+	glVertex2f(x2, h);
+	glVertex2f(x2 - w, -h);
+	glVertex2f(x2 - w, h);
+	glEnd();
+
+	glLoadIdentity();//重置当前指定的矩阵为单位矩阵
+	glTranslatef(0.5 * width(), 0.5 * height(), 0.0f);//平移
+
+    //your implementation here, maybe you should write several glBegin
+	glPushMatrix();
+	//your implementation
+	glColor3f(0.157f, 0.839f, 0.153f);//指定物体颜色
+	glRotatef(0.0f, 0.0f, 0.0f, 1.0f);//旋转
+	glTranslatef(0.0f, -22.5f, 0.0f);//平移
+	glBegin(GL_TRIANGLES);
+	glVertex2f(x1, y1 - h);
+	glVertex2f(x1, y1 + h);
+	glVertex2f(x1 - w, y1 - h);
+	glVertex2f(x1, y1 + h);
+	glVertex2f(x1 - w, y1 - h);
+	glVertex2f(x1 - w, y1 + h);
+	glVertex2f(x2, y2 - h);
+	glVertex2f(x2, y2 + h);
+	glVertex2f(x2 - w, y2 - h);
+	glVertex2f(x2, y2 + h);
+	glVertex2f(x2 - w, y2 - h);
+	glVertex2f(x2 - w, h);
+	glEnd();
+
+	glLoadIdentity();//重置当前指定的矩阵为单位矩阵
+	glTranslatef(0.5 * width(), 0.5 * height(), 0.0f);//平移
+
+    //your implementation here, maybe you should write several glBegin
+	glPushMatrix();
+	//your implementation
+	glColor3f(0.153f, 0.157f, 0.839f);//指定物体颜色
+	glRotatef(-10.0f, 0.0f, 0.0f, 1.0f);//旋转
+	glTranslatef(180.0f, -22.5f, 0.0f);//平移
+	glBegin(GL_TRIANGLES);
+	start_theta = M_PI / 4;
+	end_theta = 2 * M_PI;
+	r1 = 50.0f, r2 = 70.0f;
+	a = 1.0f, b = 1.3f;
+	x1 = a * r1 * cos(start_theta), y1 = b * r1 * sin(start_theta);
+	x2 = a * r2 * cos(start_theta), y2 = b * r2 * sin(start_theta);
+	delta_theta = 1e-6;
+	for (theta = start_theta + delta_theta; theta < end_theta; theta += delta_theta)
+	{
+		x3 = a * r1 * cos(theta), y3 = b * r1 * sin(theta);
+		x4 = a * r2 * cos(theta), y4 = b * r2 * sin(theta);
+		glVertex2f(x1, y1);
+		glVertex2f(x2, y2);
+		glVertex2f(x3, y3);
+		glVertex2f(x2, y2);
+		glVertex2f(x3, y3);
+		glVertex2f(x4, y4);
+		x1 = x3, y1 = y3, x2 = x4, y2 = y4;
+	}
+	w = 60.0f, h = 20.0f;
+	glVertex2f(a * r2, - h / 2);
+	glVertex2f(a * r2, h / 2);
+	glVertex2f(a * r2 - w, - h / 2);
+	glVertex2f(a * r2, h / 2);
+	glVertex2f(a * r2 - w, - h / 2);
+	glVertex2f(a * r2 - w, h / 2);
+	glEnd();
+
+	glPopMatrix();
+}
