@@ -12,13 +12,7 @@ LIBS += \
 
 SOURCES += \
     main.cpp \
-    myglwidget.cpp\
-    flat.vert\
-    flat.frag\
-    gouraud.vert\
-    gouraud.frag\
-    phong.vert\
-    phong.frag
+    myglwidget.cpp
 
 HEADERS += \
     myglwidget.h

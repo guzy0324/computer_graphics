@@ -53,24 +53,4 @@
       <Filter>Generated Files</Filter>
     </CustomBuild>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="flat.frag">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="flat.vert">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="phong.frag">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="phong.vert">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="gouraud.frag">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="gouraud.vert">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>

@@ -5,9 +5,13 @@
 
 
 #include "myglwidget.h"
+//Shading shading = Phong;
+//Shading shading = Gouraud;
 Shading shading = Flat;
+//float digit = 0.01f * M_PI;
+//size_t Depth = 4;
 float digit = 0.2 * M_PI;
-size_t Depth = 1;
+size_t Depth = 2;
 
 /*###################################################
 ##  函数: MyGLWidget
@@ -205,7 +209,7 @@ void MyGLWidget::initializeGL()
 	DemoLight();
 
     glViewport(0, 0, width(), height());
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
+	glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -228,13 +232,24 @@ void MyGLWidget::drawUnitBall(float digit =  0.01f * M_PI)
 		{
 			if (flag)
 			{
-				glVertex3f(sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi));
+				if (phi_next < 2 * M_PI)
+				{
+					glVertex3f(sin(theta) * sin(phi_next), cos(theta), sin(theta) * cos(phi_next));
+				}
+				else
+				{
+					glVertex3f(0.0f, cos(theta), sin(theta));
+				}
+				theta += digit;
 			}
 			else
 			{
-				glVertex3f(sin(theta) * sin(phi_next), cos(theta), sin(theta) * cos(phi_next));
-				theta += digit;
+				glVertex3f(sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi));
 			}
+		}
+		if (!flag)
+		{
+			glVertex3f(0.0f, -1.0f, 0.0f);
 		}
 		glEnd();
 	}
@@ -247,20 +262,20 @@ void MyGLWidget::drawUnitBall(float digit =  0.01f * M_PI)
 ##  参数描述： 
 ##  depth: 细分深度
 #####################################################*/
-void spherical_subdivision(size_t depth = 3)
+void spherical_subdivision(size_t depth = 4)
 {
 	float a = sqrt(3) / 3;
 	queue<vec> triangles;
 	vec vertexes[4] = { {a, -a, a}, {-a, a, a}, {a, a, -a}, {-a, -a, -a} };
-	triangles.push(vertexes[0]), triangles.push(vertexes[1]), triangles.push(vertexes[2]);
+	triangles.push(vertexes[0]), triangles.push(vertexes[2]), triangles.push(vertexes[1]);
 	triangles.push(vertexes[0]), triangles.push(vertexes[1]), triangles.push(vertexes[3]);
-	triangles.push(vertexes[0]), triangles.push(vertexes[2]), triangles.push(vertexes[3]);
+	triangles.push(vertexes[0]), triangles.push(vertexes[3]), triangles.push(vertexes[2]);
 	triangles.push(vertexes[1]), triangles.push(vertexes[2]), triangles.push(vertexes[3]);
 
 	for (size_t i = 0; i < depth; i++)
 	{
 		size_t size = triangles.size();
-		for (size_t j = 0; j < size; j++)
+		for (size_t j = 0; j < size; j += 3)
 		{
 			vec v0 = triangles.front(); triangles.pop();
 			vec v1 = triangles.front(); triangles.pop();
@@ -269,9 +284,9 @@ void spherical_subdivision(size_t depth = 3)
 			vec v02 = v0 + v2; v02.normalize();
 			vec v12 = v1 + v2; v12.normalize();
 			triangles.push(v0), triangles.push(v01), triangles.push(v02);
-			triangles.push(v1), triangles.push(v01), triangles.push(v12);
+			triangles.push(v1), triangles.push(v12), triangles.push(v01);
 			triangles.push(v2), triangles.push(v02), triangles.push(v12);
-			triangles.push(v01), triangles.push(v02), triangles.push(v12);
+			triangles.push(v01), triangles.push(v12), triangles.push(v02);
 		}
 	}
 
