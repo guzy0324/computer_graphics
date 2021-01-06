@@ -37,8 +37,8 @@ private:
     QTimer *timer;
     GLuint VBO;
 	GLuint EBO;
-    vector<GLfloat> vertices;
-    vector<GLuint> indices;
+    int v_size;
+    int i_size;
 };
 #endif // MYGLWIDGET_H
 

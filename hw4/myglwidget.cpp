@@ -12,6 +12,8 @@ size_t Depth = 6;
 //size_t Depth = 4;
 //size_t Depth = 2;
 unsigned freq = 30;
+size_t MAX_V_SIZE = 0x100000;
+size_t MAX_I_SIZE = 0x10000;
 
 
 /*###################################################
@@ -50,8 +52,13 @@ void MyGLWidget::initVBOEBO()
 {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, MAX_V_SIZE * sizeof(GLfloat), nullptr, GL_STATIC_DRAW);
+	v_size = 0;
+
 	glGenBuffers(1, &EBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_I_SIZE * sizeof(GLuint), nullptr, GL_STATIC_DRAW);
+	i_size = 0;
     // set the vertex attributes pointers
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
@@ -235,61 +242,11 @@ void MyGLWidget::initializeGL()
 #####################################################*/
 void MyGLWidget::spherical_subdivision(size_t depth = 4)
 {
-	float a = sqrt(3) / 3;
-	queue<vec> triangles;
-	vec vertexes[4] = { {a, -a, a}, {-a, a, a}, {a, a, -a}, {-a, -a, -a} };
-	triangles.push(vertexes[0]), triangles.push(vertexes[2]), triangles.push(vertexes[1]);
-	triangles.push(vertexes[0]), triangles.push(vertexes[1]), triangles.push(vertexes[3]);
-	triangles.push(vertexes[0]), triangles.push(vertexes[3]), triangles.push(vertexes[2]);
-	triangles.push(vertexes[1]), triangles.push(vertexes[2]), triangles.push(vertexes[3]);
+	static bool is_calc = false;
+	static vector<vec> vert;
 
-	for (size_t i = 0; i < depth; i++)
+	if (!is_calc)
 	{
-		size_t size = triangles.size();
-		for (size_t j = 0; j < size; j += 3)
-		{
-			vec v0 = triangles.front(); triangles.pop();
-			vec v1 = triangles.front(); triangles.pop();
-			vec v2 = triangles.front(); triangles.pop();
-			vec v01 = v0 + v1; v01.normalize();
-			vec v02 = v0 + v2; v02.normalize();
-			vec v12 = v1 + v2; v12.normalize();
-			triangles.push(v0), triangles.push(v01), triangles.push(v02);
-			triangles.push(v1), triangles.push(v12), triangles.push(v01);
-			triangles.push(v2), triangles.push(v02), triangles.push(v12);
-			triangles.push(v01), triangles.push(v12), triangles.push(v02);
-		}
-	}
-
-	while (!triangles.empty())
-	{
-		vec v0 = triangles.front(); triangles.pop();
-		vec v1 = triangles.front(); triangles.pop();
-		vec v2 = triangles.front(); triangles.pop();
-		glBegin(GL_TRIANGLES);
-		glVertex3f(v0.x, v0.y, v0.z);
-		glVertex3f(v1.x, v1.y, v1.z);
-		glVertex3f(v2.x, v2.y, v2.z);
-		glEnd();
-	}
-}
-
-
-/*###################################################
-##  函数: spherical_subdivision_VBO
-##  函数描述： 球面细分，使用VBO
-##  参数描述：
-##  depth: 细分深度
-#####################################################*/
-void MyGLWidget::spherical_subdivision_VBO(size_t depth = 4)
-{
-	static bool is_bind = false;
-	static int v_begin;
-	static int v_end;
-	if (!is_bind)
-	{
-		v_begin = vertices.size();
-
 		float a = sqrt(3) / 3;
 		queue<vec> triangles;
 		vec vertexes[4] = { {a, -a, a}, {-a, a, a}, {a, a, -a}, {-a, -a, -a} };
@@ -318,23 +275,79 @@ void MyGLWidget::spherical_subdivision_VBO(size_t depth = 4)
 
 		while (!triangles.empty())
 		{
-			vec v = triangles.front(); triangles.pop();
-			vertices.push_back(v.x);
-			vertices.push_back(v.y);
-			vertices.push_back(v.z);
-			v = triangles.front(); triangles.pop();
-			vertices.push_back(v.x);
-			vertices.push_back(v.y);
-			vertices.push_back(v.z);
-			v = triangles.front(); triangles.pop();
-			vertices.push_back(v.x);
-			vertices.push_back(v.y);
-			vertices.push_back(v.z);
+			vec v = triangles.front(); triangles.pop(); vert.push_back(v);
+			v = triangles.front(); triangles.pop(); vert.push_back(v);
+			v = triangles.front(); triangles.pop(); vert.push_back(v);
 		}
-		v_end = vertices.size();
+		is_calc = true;
+	}
+	for (int i = 0; i < vert.size(); i += 3)
+	{
+		glBegin(GL_TRIANGLES);
+		glVertex3f(vert[i].x, vert[i].y, vert[i].z);
+		glVertex3f(vert[i + 1].x, vert[i + 1].y, vert[i + 1].z);
+		glVertex3f(vert[i + 2].x, vert[i + 2].y, vert[i + 2].z);
+		glEnd();
+	}
+}
+
+
+/*###################################################
+##  函数: spherical_subdivision_VBO
+##  函数描述： 球面细分，使用VBO
+##  参数描述：
+##  depth: 细分深度
+#####################################################*/
+void MyGLWidget::spherical_subdivision_VBO(size_t depth = 4)
+{
+	static bool is_calc = false;
+	static int v_begin;
+	static int v_end;
+	if (!is_calc)
+	{
+		v_begin = v_size;
+
+		float a = sqrt(3) / 3;
+		queue<vec> triangles;
+		vec vertexes[4] = { {a, -a, a}, {-a, a, a}, {a, a, -a}, {-a, -a, -a} };
+		triangles.push(vertexes[0]), triangles.push(vertexes[2]), triangles.push(vertexes[1]);
+		triangles.push(vertexes[0]), triangles.push(vertexes[1]), triangles.push(vertexes[3]);
+		triangles.push(vertexes[0]), triangles.push(vertexes[3]), triangles.push(vertexes[2]);
+		triangles.push(vertexes[1]), triangles.push(vertexes[2]), triangles.push(vertexes[3]);
+
+		for (size_t i = 0; i < depth; i++)
+		{
+			size_t size = triangles.size();
+			for (size_t j = 0; j < size; j += 3)
+			{
+				vec v0 = triangles.front(); triangles.pop();
+				vec v1 = triangles.front(); triangles.pop();
+				vec v2 = triangles.front(); triangles.pop();
+				vec v01 = v0 + v1; v01.normalize();
+				vec v02 = v0 + v2; v02.normalize();
+				vec v12 = v1 + v2; v12.normalize();
+				triangles.push(v0), triangles.push(v01), triangles.push(v02);
+				triangles.push(v1), triangles.push(v12), triangles.push(v01);
+				triangles.push(v2), triangles.push(v02), triangles.push(v12);
+				triangles.push(v01), triangles.push(v12), triangles.push(v02);
+			}
+		}
+
+		vector<GLfloat> vertices;
+		while (!triangles.empty())
+		{
+			vec v = triangles.front(); triangles.pop();
+			vertices.push_back(v.x), vertices.push_back(v.y), vertices.push_back(v.z);
+			v = triangles.front(); triangles.pop();
+			vertices.push_back(v.x), vertices.push_back(v.y), vertices.push_back(v.z);
+			v = triangles.front(); triangles.pop();
+			vertices.push_back(v.x), vertices.push_back(v.y), vertices.push_back(v.z);
+		}
+		v_size = v_begin + vertices.size();
+		v_end = v_size;
         // copy our vertices array in a vertex buffer for OpenGL to use
-		glBufferData(GL_ARRAY_BUFFER, v_end * sizeof(GLfloat), &vertices[0], GL_STATIC_DRAW);
-		is_bind = true;
+		glBufferSubData(GL_ARRAY_BUFFER, v_begin * sizeof(GLfloat), (v_end - v_begin) * sizeof(GLfloat), &vertices[0]);
+		is_calc = true;
 	}
 	glDrawArrays(GL_TRIANGLES, v_begin / 3, (v_end - v_begin) / 3);
 }
@@ -348,27 +361,24 @@ void MyGLWidget::spherical_subdivision_VBO(size_t depth = 4)
 #####################################################*/
 void MyGLWidget::spherical_subdivision_EBO(size_t depth = 4)
 {
-	//绑定VBO数据
-	static bool is_bind = false;
-	static int v_begin;
-	static int v_end;
+	static bool is_calc = false;
 	static int i_begin;
 	static int i_end;
-	if (!is_bind)
+	if (!is_calc)
 	{
-		v_begin = vertices.size();
-		i_begin = indices.size();
+		i_begin = i_size;
 
 		float a = sqrt(3) / 3;
+		vector<GLfloat> vertices;
 		vertices.push_back(a), vertices.push_back(-a), vertices.push_back(a);
 		vertices.push_back(-a), vertices.push_back(a), vertices.push_back(a);
 		vertices.push_back(a), vertices.push_back(a), vertices.push_back(-a);
 		vertices.push_back(-a), vertices.push_back(-a), vertices.push_back(-a);
 		queue<GLuint> triangles;
-		triangles.push(v_begin / 3), triangles.push(v_begin / 3 + 2), triangles.push(v_begin / 3 + 1);
-		triangles.push(v_begin / 3), triangles.push(v_begin / 3 + 1), triangles.push(v_begin / 3 + 3);
-		triangles.push(v_begin / 3), triangles.push(v_begin / 3 + 3), triangles.push(v_begin / 3 + 2);
-		triangles.push(v_begin / 3 + 1), triangles.push(v_begin / 3 + 2), triangles.push(v_begin / 3 + 3);
+		triangles.push(0), triangles.push(2), triangles.push(1);
+		triangles.push(0), triangles.push(1), triangles.push(3);
+		triangles.push(0), triangles.push(3), triangles.push(2);
+		triangles.push(1), triangles.push(2), triangles.push(3);
 
 		for (size_t i = 0; i < depth; i++)
 		{
@@ -397,22 +407,25 @@ void MyGLWidget::spherical_subdivision_EBO(size_t depth = 4)
 			}
 		}
 
+		int v_begin = v_size;
+		v_size = v_begin + vertices.size();
+        // copy our vertices array in a vertex buffer for OpenGL to use
+		glBufferSubData(GL_ARRAY_BUFFER, v_begin * sizeof(GLfloat), (v_size - v_begin) * sizeof(GLfloat), &vertices[0]);
+		v_begin /= 3;
+		vector<GLuint> indices;
 		while (!triangles.empty())
 		{
 			GLuint i = triangles.front(); triangles.pop();
-			indices.push_back(i);
+			indices.push_back(v_begin + i);
 			i = triangles.front(); triangles.pop();
-			indices.push_back(i);
+			indices.push_back(v_begin + i);
 			i = triangles.front(); triangles.pop();
-			indices.push_back(i);
+			indices.push_back(v_begin + i);
 		}
-		v_end = vertices.size();
-        // copy our vertices array in a vertex buffer for OpenGL to use
-		glBufferData(GL_ARRAY_BUFFER, v_end * sizeof(GLfloat), &vertices[0], GL_STATIC_DRAW);
 		i_end = indices.size();
         // copy our index array in a element buffer for OpenGL to use
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, i_end * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-		is_bind = true;
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, i_begin * sizeof(GLuint), (i_end - i_begin) * sizeof(GLuint), &indices[0]);
+		is_calc = true;
 	}
 	glDrawElements(GL_TRIANGLES, i_end - i_begin, GL_UNSIGNED_INT, (void*)(i_begin * sizeof(GLuint)));
 }
